@@ -1,69 +1,103 @@
 # tracker/views.py
-from datetime import datetime
-
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, redirect, render
+
+from .forms import MoodEntryForm, TagForm
+from .models import MoodEntry, Tag
 
 
 def home(request):
     return render(request, "home.html")
 
 
+@login_required
 def entry_list(request):
-    entries = [
-        {
-            "pk": 1,
-            "mood": "Great",
-            "date": datetime(2026, 10, 1),
-            "intensity": 9,
-            "note": "Had a very productive day and accomplished most of my goals.",
-            "tags": [{"pk": 1, "name": "work"}, {"pk": 3, "name": "productive"}, {"pk": 4, "name": "motivation"}],
-        },
-        {
-            "pk": 2,
-            "mood": "Good",
-            "date": datetime(2026, 10, 2),
-            "intensity": 7,
-            "note": "A good day. I managed to finish my tasks and had some time to relax.",
-            "tags": [{"pk": 1, "name": "work"}, {"pk": 2, "name": "relaxation"}],
-        },
-        {
-            "pk": 3,
-            "mood": "okay",
-            "date": datetime(2026, 10, 3),
-            "intensity": 5,
-            "note": "Nothing special today. Everything went normally.",
-            "tags": [{"pk": 5, "name": "normal-day"}],
-        },
-    ]
-    return render(request, "moods/entry_list.html", {"entries": entries})
+    entries = (MoodEntry.objects.filter(user=request.user)
+               .select_related("category")
+               .prefetch_related("tags")
+               .order_by("-created_at"))
+
+    return render(request, "moods/entry_list.html", {
+        "entries": entries})
 
 
+@login_required
 def entry_create(request):
-    return render(request, "moods/entry_form.html")
+    if request.method == "POST":
+        form = MoodEntryForm(request.POST)
+        if form.is_valid():
+            entry = form.save(commit=False)
+            entry.user = request.user
+            entry.save()
+            form.save_m2m()
+            messages.success(request, "Mood saved.")
+            return redirect("entry_list")
+    else:
+        form = MoodEntryForm()
+
+    return render(request, "moods/entry_form.html",
+                  {"form": form})
 
 
 def entry_detail(request, id):
     return HttpResponse(f"Detail of entry #{id}")
 
 
+@login_required
 def entry_edit(request, id):
-    return HttpResponse(f"Edit form for entry #{id}")
+    entry = get_object_or_404(
+        MoodEntry, pk=id, user=request.user)
+
+    if request.method == "POST":
+        form = MoodEntryForm(request.POST, instance=entry)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Entry updated.")
+            return redirect("entry_list")
+    else:
+        form = MoodEntryForm(instance=entry)
+
+    return render(request, "moods/entry_form.html",
+                  {"form": form, "object": entry})
 
 
 def entry_delete(request, id):
     return HttpResponse(f"Confirm deletion of entry #{id}")
 
 
+@login_required
 def tag_list(request):
-    tags = [
-        {"pk": 1, "name": "work"},
-        {"pk": 2, "name": "relaxation"},
-        {"pk": 3, "name": "productive"},
-        {"pk": 4, "name": "motivation"},
-        {"pk": 5, "name": "normal-day"},
-    ]
-    return render(request, "tags/tag_list.html", {"tags": tags})
+    if request.method == "POST":
+        form = TagForm(request.POST)
+        if form.is_valid():
+            tag = form.save()
+            messages.success(request, "Tag created.")
+            return redirect("tag_list")
+    else:
+        form = TagForm()
+
+    return render(request, "tags/tag_list.html",
+                  {"tags": Tag.objects.all(), "form": form})
+
+
+@login_required
+def tag_edit(request, slug):
+    tag = get_object_or_404(Tag, slug=slug)
+
+    if request.method == "POST":
+        form = TagForm(request.POST, instance=tag)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Tag updated.")
+            return redirect("tag_list")
+    else:
+        form = TagForm(instance=tag)
+
+    return render(request, "tags/tag_list.html",
+                  {"tags": Tag.objects.all(),
+                   "form": form, "editing": tag})
 
 
 def tag_detail(request, slug):

@@ -130,3 +130,10 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+
+
+# Authentication redirects (Lab 5)
+
+LOGIN_URL = "login"            # @login_required sends here
+LOGIN_REDIRECT_URL = "home"    # after a successful login
+LOGOUT_REDIRECT_URL = "login"  # after logout

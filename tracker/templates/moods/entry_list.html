@@ -53,21 +53,21 @@
   {% for entry in entries %}
   <li>
     <article class="card entry">
-      <time class="entry-date mood-{{ entry.pk }}" datetime="{{ entry.date|date:'Y-m-d' }}">
-        <span class="entry-day">{{ entry.date|date:"d" }}</span>
-        <span class="entry-month">{{ entry.date|date:"M" }}</span>
+      <time class="entry-date mood-{{ entry.mood }}" datetime="{{ entry.created_at|date:'Y-m-d' }}">
+        <span class="entry-day">{{ entry.created_at|date:"d" }}</span>
+        <span class="entry-month">{{ entry.created_at|date:"M" }}</span>
       </time>
 
       <div class="entry-body">
         <div class="entry-head">
-          <h2 class="entry-title">{{ entry.mood }}</h2>
+          <h2 class="entry-title">{{ entry.get_mood_display }}</h2>
           <span class="intensity">
             <span class="intensity-track" aria-hidden="true"><span class="intensity-fill" style="width: {% widthratio entry.intensity 10 100 %}%"></span></span>
             Intensity {{ entry.intensity }}/10
           </span>
         </div>
         {% if entry.note %}<p class="entry-note">{{ entry.note|truncatewords:40 }}</p>{% endif %}
-        {% with entry_tags=entry.tags %}
+        {% with entry_tags=entry.tags.all %}
         {% if entry_tags %}
         <ul class="tag-list" aria-label="Tags">
           {% for tag in entry_tags %}<li class="tag">{{ tag.name }}</li>{% endfor %}

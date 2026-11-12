@@ -24,7 +24,7 @@
         <p class="eyebrow">Your library</p>
         <h2 class="section-title">All tags</h2>
       </div>
-      <span class="count-badge">{{ tags|length|default:"6" }} tags</span>
+      <span class="count-badge">{{ tags|length }} tag{{ tags|length|pluralize }}</span>
     </div>
 
     <div class="tag-list" role="list">
@@ -32,10 +32,10 @@
       <article class="tag-row" role="listitem">
         <div class="tag-row-main">
           <span class="tag tag--{{ forloop.counter|add:'2' }}">{{ tag.name }}</span>
-          <span class="tag-count">{{ tag.moodentry_set.count }} entries</span>
+          <span class="tag-count">{{ tag.entries.count }} entries</span>
         </div>
         <div class="tag-row-actions">
-          <a class="text-button" href="#">Edit<span class="sr-only"> {{ tag.name }}</span></a>
+          <a class="text-button" href="{% url 'tag_edit' tag.slug %}">Edit<span class="sr-only"> {{ tag.name }}</span></a>
           <a class="text-button text-button--danger" href="#">Delete<span class="sr-only"> {{ tag.name }}</span></a>
         </div>
       </article>
@@ -51,12 +51,19 @@
 
   <aside class="card tag-form-card" id="new-tag">
     <p class="eyebrow">New label</p>
-    <h2 class="section-title">Add a tag</h2>
+    <h2 class="section-title">
+      {% if editing %}Edit tag{% else %}Add a tag{% endif %}
+    </h2>
     <p class="card-text">Keep it short and specific. You can add a tag to any mood entry later.</p>
     <form method="post" class="tag-form">
       {% csrf_token %}
       {% include "registration/partials/_field.html" with field=form.name %}
-      <button class="btn btn-primary" type="submit">Create tag</button>
+      <button class="btn btn-primary" type="submit">
+        {% if editing %}Save changes{% else %}Create tag{% endif %}
+      </button>
+      {% if editing %}
+        <a class="btn btn-ghost" href="{% url 'tag_list' %}">Cancel</a>
+      {% endif %}
     </form>
     <div class="tag-examples">
       <span class="form-help">Ideas</span>
